@@ -209,12 +209,24 @@ void Widget::checkSharedMemoryUpdate()
     updateConnectionStatus();
 }
 
+QString Widget::getStationNameFromNodeId(int nodeId){
+    //根据node_id返回站点名称
+    switch(nodeId){
+        case 1: return QString::fromUtf8("主站点");
+        case 2: return QString::fromUtf8("上海站");
+        case 3: return QString::fromUtf8("广州站");
+        case 4: return QString::fromUtf8("成都站");
+        case 5: return QString::fromUtf8("西安站");
+        case 6: return QString::fromUtf8("武汉站");
+        default: return QString::fromUtf8("未知站点");
+    }
+}
+
 void Widget::updateDataFromSharedMemory()
 {
     if (!m_sharedMemoryValid || m_sharedData == nullptr) {
         return;
     }
-
 
     //qDebug() << "Updating data from shared memory, latest data type:" << m_sharedData->latest_data.data_type;
 
@@ -222,7 +234,18 @@ void Widget::updateDataFromSharedMemory()
     switch (m_sharedData->latest_data.data_type) {
         case SENSOR_BME280:
             if (m_sharedData->latest_bme280.valid) {
-                updateStationWithBME280Data(m_sharedData->latest_bme280, 0);
+                // 获取node_id并查找对应的站点名称
+                int nodeId = m_sharedData->latest_data.data.bme280.node_id;
+                QString stationName = getStationNameFromNodeId(nodeId);
+                if (stationName.isEmpty()) {
+                        stationName = QString::fromUtf8("未知站点");
+                    }
+                if(!m_stationWidgets.isEmpty()){
+                    m_stationWidgets[nodeId]->setStationName(stationName);
+                }
+                updateStationWithBME280Data(m_sharedData->latest_bme280, nodeId);
+                // 更新告警状态
+                updateAlertWithLatestData(nodeId);
             //    qDebug() << "Updated BME280 data: T=" << m_sharedData->latest_bme280.temperature
             //             << "°C, H=" << m_sharedData->latest_bme280.humidity
             //             << "%, P=" << m_sharedData->latest_bme280.pressure << "hPa";
@@ -231,7 +254,18 @@ void Widget::updateDataFromSharedMemory()
 
         case SENSOR_LIGHTRAIN:
             if (m_sharedData->latest_lightrain.valid) {
-                updateStationWithLightRainData(m_sharedData->latest_lightrain, 0);
+                // 获取node_id并查找对应的站点名称
+                int nodeId = m_sharedData->latest_data.data.bme280.node_id;
+                QString stationName = getStationNameFromNodeId(nodeId);
+                if (stationName.isEmpty()) {
+                        stationName = QString::fromUtf8("未知站点");
+                    }
+                if(!m_stationWidgets.isEmpty()){
+                    m_stationWidgets[nodeId]->setStationName(stationName);
+                }
+                updateStationWithLightRainData(m_sharedData->latest_lightrain, nodeId);
+                // 更新告警状态
+                updateAlertWithLatestData(nodeId);
             //    qDebug() << "Updated LightRain data: Lux=" << m_sharedData->latest_lightrain.light_intensity
             //             << "lx, Rain=" << m_sharedData->latest_lightrain.rainfall << "%";
             }
@@ -239,7 +273,18 @@ void Widget::updateDataFromSharedMemory()
 
         case SENSOR_GPS:
             if (m_sharedData->latest_gps.valid) {
-            //    updateStationWithGPSData(m_sharedData->latest_gps, 0);
+                // 获取node_id并查找对应的站点名称
+                int nodeId = m_sharedData->latest_data.data.bme280.node_id;
+                QString stationName = getStationNameFromNodeId(nodeId);
+                if (stationName.isEmpty()) {
+                        stationName = QString::fromUtf8("未知站点");
+                    }
+                if(!m_stationWidgets.isEmpty()){
+                    m_stationWidgets[nodeId]->setStationName(stationName);
+                }
+                updateStationWithGPSData(m_sharedData->latest_gps, nodeId);
+                // 更新告警状态
+                updateAlertWithLatestData(nodeId);
             //    qDebug() << "Updated GPS data: Lat=" << m_sharedData->latest_gps.latitude
             //             << ", Lon=" << m_sharedData->latest_gps.longitude;
             }
@@ -257,11 +302,10 @@ void Widget::updateDataFromSharedMemory()
             break;
     }
 
-    // 更新告警状态
-    updateAlertWithLatestData(0);
 
-    // 为其他站点生成随机数据
-    simulateRandomDataForOtherStations(0);
+
+//    // 为其他站点生成随机数据
+//    simulateRandomDataForOtherStations(0);
 
     m_useRealData = true;
 }
@@ -844,6 +888,12 @@ WeatherStationWidget::WeatherStationWidget(const QString& stationName, QWidget *
     m_currentData.lightIntensity = 25000.0;
     m_currentData.waterVapor = 12.5;
     m_currentData.rainfall = 0.0;
+}
+void WeatherStationWidget::setStationName(const QString &stationName){
+    m_stationName = stationName;
+    if(m_nameLabel){
+        m_nameLabel->setText(stationName);
+    }
 }
 
 void WeatherStationWidget::setupUI()

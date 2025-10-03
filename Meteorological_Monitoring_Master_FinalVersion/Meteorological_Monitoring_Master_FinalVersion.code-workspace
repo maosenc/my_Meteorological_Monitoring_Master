@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"files.associations": {
+			"string.h": "c",
+			"socket.h": "c",
+			"fstream": "c"
+		}
+	}
+}
