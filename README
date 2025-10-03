@@ -3,3 +3,14 @@
           编译发送端客户端: make send 这是Ubuntu中运行的发送端程序，将数据发送到云服务器 
           编译接收客户端： make recv 这是开发板中运行的接收端程序，接收云服务器发送来的数据 
 2025/9/21 cl
+
+多要素分布式气象数据显示终端
+/Meteorological_Monitoring_Master_FinalVersion:
+	proth.h:数据转发类头文件
+	shared_data.h:共享内存数据头文件
+	receiver_with_shm.c:嵌入式linux平台数据接收c程序
+	server.c:服务器端数据转发c程序
+	test_sender.c:PC机ubuntu系统模拟多数据发送客户端程序
+/Meteorological_Monitoring_Master:
+	嵌入式linux平台清洗数据显示QT程序
+2025/10/3 cl
