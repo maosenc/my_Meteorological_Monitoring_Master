@@ -21,8 +21,8 @@ QT_BEGIN_MOC_NAMESPACE
 QT_WARNING_PUSH
 QT_WARNING_DISABLE_DEPRECATED
 struct qt_meta_stringdata_Widget_t {
-    QByteArrayData data[8];
-    char stringdata0[134];
+    QByteArrayData data[7];
+    char stringdata0[116];
 };
 #define QT_MOC_LITERAL(idx, ofs, len) \
     Q_STATIC_BYTE_ARRAY_DATA_HEADER_INITIALIZER_WITH_OFFSET(len, \
@@ -32,18 +32,17 @@ struct qt_meta_stringdata_Widget_t {
 static const qt_meta_stringdata_Widget_t qt_meta_stringdata_Widget = {
     {
 QT_MOC_LITERAL(0, 0, 6), // "Widget"
-QT_MOC_LITERAL(1, 7, 17), // "updateWeatherData"
-QT_MOC_LITERAL(2, 25, 0), // ""
-QT_MOC_LITERAL(3, 26, 23), // "checkSharedMemoryUpdate"
-QT_MOC_LITERAL(4, 50, 17), // "updateTimeDisplay"
-QT_MOC_LITERAL(5, 68, 14), // "showSystemInfo"
-QT_MOC_LITERAL(6, 83, 23), // "updateSystemInfoDisplay"
-QT_MOC_LITERAL(7, 107, 26) // "updateDataFromSharedMemory"
+QT_MOC_LITERAL(1, 7, 23), // "checkSharedMemoryUpdate"
+QT_MOC_LITERAL(2, 31, 0), // ""
+QT_MOC_LITERAL(3, 32, 17), // "updateTimeDisplay"
+QT_MOC_LITERAL(4, 50, 14), // "showSystemInfo"
+QT_MOC_LITERAL(5, 65, 23), // "updateSystemInfoDisplay"
+QT_MOC_LITERAL(6, 89, 26) // "updateDataFromSharedMemory"
 
     },
-    "Widget\0updateWeatherData\0\0"
-    "checkSharedMemoryUpdate\0updateTimeDisplay\0"
-    "showSystemInfo\0updateSystemInfoDisplay\0"
+    "Widget\0checkSharedMemoryUpdate\0\0"
+    "updateTimeDisplay\0showSystemInfo\0"
+    "updateSystemInfoDisplay\0"
     "updateDataFromSharedMemory"
 };
 #undef QT_MOC_LITERAL
@@ -54,7 +53,7 @@ static const uint qt_meta_data_Widget[] = {
        7,       // revision
        0,       // classname
        0,    0, // classinfo
-       6,   14, // methods
+       5,   14, // methods
        0,    0, // properties
        0,    0, // enums/sets
        0,    0, // constructors
@@ -62,15 +61,13 @@ static const uint qt_meta_data_Widget[] = {
        0,       // signalCount
 
  // slots: name, argc, parameters, tag, flags
-       1,    0,   44,    2, 0x08 /* Private */,
-       3,    0,   45,    2, 0x08 /* Private */,
-       4,    0,   46,    2, 0x08 /* Private */,
-       5,    0,   47,    2, 0x08 /* Private */,
-       6,    0,   48,    2, 0x08 /* Private */,
-       7,    0,   49,    2, 0x08 /* Private */,
+       1,    0,   39,    2, 0x08 /* Private */,
+       3,    0,   40,    2, 0x08 /* Private */,
+       4,    0,   41,    2, 0x08 /* Private */,
+       5,    0,   42,    2, 0x08 /* Private */,
+       6,    0,   43,    2, 0x08 /* Private */,
 
  // slots: parameters
-    QMetaType::Void,
     QMetaType::Void,
     QMetaType::Void,
     QMetaType::Void,
@@ -86,12 +83,11 @@ void Widget::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, void
         Widget *_t = static_cast<Widget *>(_o);
         Q_UNUSED(_t)
         switch (_id) {
-        case 0: _t->updateWeatherData(); break;
-        case 1: _t->checkSharedMemoryUpdate(); break;
-        case 2: _t->updateTimeDisplay(); break;
-        case 3: _t->showSystemInfo(); break;
-        case 4: _t->updateSystemInfoDisplay(); break;
-        case 5: _t->updateDataFromSharedMemory(); break;
+        case 0: _t->checkSharedMemoryUpdate(); break;
+        case 1: _t->updateTimeDisplay(); break;
+        case 2: _t->showSystemInfo(); break;
+        case 3: _t->updateSystemInfoDisplay(); break;
+        case 4: _t->updateDataFromSharedMemory(); break;
         default: ;
         }
     }
@@ -123,13 +119,13 @@ int Widget::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
     if (_id < 0)
         return _id;
     if (_c == QMetaObject::InvokeMetaMethod) {
-        if (_id < 6)
+        if (_id < 5)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 6;
+        _id -= 5;
     } else if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
-        if (_id < 6)
+        if (_id < 5)
             *reinterpret_cast<int*>(_a[0]) = -1;
-        _id -= 6;
+        _id -= 5;
     }
     return _id;
 }

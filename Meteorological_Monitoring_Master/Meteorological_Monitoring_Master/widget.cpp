@@ -224,9 +224,7 @@ QString Widget::getStationNameFromNodeId(int nodeId){
 
 void Widget::updateDataFromSharedMemory()
 {
-    if (!m_sharedMemoryValid || m_sharedData == nullptr) {
-        return;
-    }
+    if (!m_sharedMemoryValid || m_sharedData == nullptr) return;
 
     //qDebug() << "Updating data from shared memory, latest data type:" << m_sharedData->latest_data.data_type;
 
@@ -235,14 +233,10 @@ void Widget::updateDataFromSharedMemory()
         case SENSOR_BME280:
             if (m_sharedData->latest_bme280.valid) {
                 // 获取node_id并查找对应的站点名称
-                int nodeId = m_sharedData->latest_data.data.bme280.node_id;
+                int nodeId = m_sharedData->latest_bme280.node_id;
+                ensureWidgetsForNode(nodeId);
                 QString stationName = getStationNameFromNodeId(nodeId);
-                if (stationName.isEmpty()) {
-                        stationName = QString::fromUtf8("未知站点");
-                    }
-                if(!m_stationWidgets.isEmpty()){
-                    m_stationWidgets[nodeId]->setStationName(stationName);
-                }
+                m_stationByNodeId[nodeId]->setStationName(stationName);
                 updateStationWithBME280Data(m_sharedData->latest_bme280, nodeId);
                 // 更新告警状态
                 updateAlertWithLatestData(nodeId);
@@ -255,14 +249,10 @@ void Widget::updateDataFromSharedMemory()
         case SENSOR_LIGHTRAIN:
             if (m_sharedData->latest_lightrain.valid) {
                 // 获取node_id并查找对应的站点名称
-                int nodeId = m_sharedData->latest_data.data.bme280.node_id;
+                int nodeId = m_sharedData->latest_lightrain.node_id;
+                ensureWidgetsForNode(nodeId);
                 QString stationName = getStationNameFromNodeId(nodeId);
-                if (stationName.isEmpty()) {
-                        stationName = QString::fromUtf8("未知站点");
-                    }
-                if(!m_stationWidgets.isEmpty()){
-                    m_stationWidgets[nodeId]->setStationName(stationName);
-                }
+                m_stationByNodeId[nodeId]->setStationName(stationName);
                 updateStationWithLightRainData(m_sharedData->latest_lightrain, nodeId);
                 // 更新告警状态
                 updateAlertWithLatestData(nodeId);
@@ -274,14 +264,10 @@ void Widget::updateDataFromSharedMemory()
         case SENSOR_GPS:
             if (m_sharedData->latest_gps.valid) {
                 // 获取node_id并查找对应的站点名称
-                int nodeId = m_sharedData->latest_data.data.bme280.node_id;
+                int nodeId = m_sharedData->latest_gps.node_id;
+                ensureWidgetsForNode(nodeId);
                 QString stationName = getStationNameFromNodeId(nodeId);
-                if (stationName.isEmpty()) {
-                        stationName = QString::fromUtf8("未知站点");
-                    }
-                if(!m_stationWidgets.isEmpty()){
-                    m_stationWidgets[nodeId]->setStationName(stationName);
-                }
+                m_stationByNodeId[nodeId]->setStationName(stationName);
                 updateStationWithGPSData(m_sharedData->latest_gps, nodeId);
                 // 更新告警状态
                 updateAlertWithLatestData(nodeId);
@@ -310,68 +296,69 @@ void Widget::updateDataFromSharedMemory()
     m_useRealData = true;
 }
 
-void Widget::updateStationWithBME280Data(const struct bme280_data &data, int stationIndex)
+void Widget::updateStationWithBME280Data(const struct bme280_data &data, int nodeId)
 {
-    if (stationIndex >= 0 && stationIndex < m_stationWidgets.size()) {
-        m_stationWidgets[stationIndex]->updateBME280Data(data);
+    if (m_stationByNodeId.contains(nodeId)){
+        m_stationByNodeId[nodeId]->updateBME280Data(data);
     }
 }
 
-void Widget::updateStationWithLightRainData(const struct lightrain_data &data, int stationIndex)
+void Widget::updateStationWithLightRainData(const struct lightrain_data &data, int nodeId)
 {
-    if (stationIndex >= 0 && stationIndex < m_stationWidgets.size()) {
-        m_stationWidgets[stationIndex]->updateLightRainData(data);
+    if (m_stationByNodeId.contains(nodeId)) {
+        m_stationByNodeId[nodeId]->updateLightRainData(data);
     }
 }
 
-void Widget::updateStationWithGPSData(const struct gps_data &data, int stationIndex)
+void Widget::updateStationWithGPSData(const struct gps_data &data, int nodeId)
 {
-    if (stationIndex >= 0 && stationIndex < m_stationWidgets.size()) {
-        m_stationWidgets[stationIndex]->updateGPSData(data);
+    if (m_stationByNodeId.contains(nodeId)) {
+        m_stationByNodeId[nodeId]->updateGPSData(data);
     }
 }
 
-void Widget::updateAlertWithLatestData(int stationIndex)
+void Widget::updateAlertWithLatestData(int nodeId)
 {
-    if (stationIndex >= 0 && stationIndex < m_alertWidgets.size()) {
-        QString alertType, alertMessage, status = QString::fromUtf8("正常");
+    if(!m_alertByNodeId.contains(nodeId)) return;
 
-        // 检查BME280数据告警
-        if (m_sharedData->latest_bme280.valid) {
-            if (m_sharedData->latest_bme280.temperature > 35.0f) {
-                alertType = QString::fromUtf8("温度");
-                alertMessage = QString::fromUtf8("极高温警报：%1°C").arg(m_sharedData->latest_bme280.temperature, 0, 'f', 1);
-                status = QString::fromUtf8("警报");
-            } else if (m_sharedData->latest_bme280.temperature > 30.0f) {
-                alertType = QString::fromUtf8("温度");
-                alertMessage = QString::fromUtf8("高温告警：%1°C").arg(m_sharedData->latest_bme280.temperature, 0, 'f', 1);
-                status = QString::fromUtf8("告警");
-            } else if (m_sharedData->latest_bme280.humidity > 90) {
-                alertType = QString::fromUtf8("湿度");
-                alertMessage = QString::fromUtf8("高湿度警报：%1%").arg(m_sharedData->latest_bme280.humidity, 0, 'f', 1);
-                status = QString::fromUtf8("警报");
-            } else if (m_sharedData->latest_bme280.humidity > 80) {
-                alertType = QString::fromUtf8("湿度");
-                alertMessage = QString::fromUtf8("湿度告警：%1%").arg(m_sharedData->latest_bme280.humidity, 0, 'f', 1);
-                status = QString::fromUtf8("告警");
-            }
+    QString alertType, alertMessage, status = QString::fromUtf8("正常");
+
+    // 检查BME280数据告警
+    if (m_sharedData->latest_bme280.valid &&
+        m_sharedData->latest_bme280.node_id == nodeId) {
+        if (m_sharedData->latest_bme280.temperature > 35.0f) {
+            alertType = QString::fromUtf8("温度");
+            alertMessage = QString::fromUtf8("极高温警报：%1°C").arg(m_sharedData->latest_bme280.temperature, 0, 'f', 1);
+            status = QString::fromUtf8("警报");
+        } else if (m_sharedData->latest_bme280.temperature > 30.0f) {
+            alertType = QString::fromUtf8("温度");
+            alertMessage = QString::fromUtf8("高温告警：%1°C").arg(m_sharedData->latest_bme280.temperature, 0, 'f', 1);
+            status = QString::fromUtf8("告警");
+        } else if (m_sharedData->latest_bme280.humidity > 90) {
+            alertType = QString::fromUtf8("湿度");
+            alertMessage = QString::fromUtf8("高湿度警报：%1%").arg(m_sharedData->latest_bme280.humidity, 0, 'f', 1);
+            status = QString::fromUtf8("警报");
+        } else if (m_sharedData->latest_bme280.humidity > 80) {
+            alertType = QString::fromUtf8("湿度");
+            alertMessage = QString::fromUtf8("湿度告警：%1%").arg(m_sharedData->latest_bme280.humidity, 0, 'f', 1);
+            status = QString::fromUtf8("告警");
         }
-
-        // 检查光强雨量数据告警
-        if (status == QString::fromUtf8("正常") && m_sharedData->latest_lightrain.valid) {
-            if (m_sharedData->latest_lightrain.rainfall > 80) {
-                alertType = QString::fromUtf8("降雨");
-                alertMessage = QString::fromUtf8("强降雨警报：%1%").arg(m_sharedData->latest_lightrain.rainfall);
-                status = QString::fromUtf8("警报");
-            } else if (m_sharedData->latest_lightrain.rainfall > 50) {
-                alertType = QString::fromUtf8("降雨");
-                alertMessage = QString::fromUtf8("降雨告警：%1%").arg(m_sharedData->latest_lightrain.rainfall);
-                status = QString::fromUtf8("告警");
-            }
-        }
-
-        m_alertWidgets[stationIndex]->updateAlertData(alertType, alertMessage, status);
     }
+
+    // 检查光强雨量数据告警
+    if (status == QString::fromUtf8("正常") && m_sharedData->latest_lightrain.valid&&
+            m_sharedData->latest_lightrain.node_id == nodeId) {
+        if (m_sharedData->latest_lightrain.rainfall > 80) {
+            alertType = QString::fromUtf8("降雨");
+            alertMessage = QString::fromUtf8("强降雨警报：%1%").arg(m_sharedData->latest_lightrain.rainfall);
+            status = QString::fromUtf8("警报");
+        } else if (m_sharedData->latest_lightrain.rainfall > 50) {
+            alertType = QString::fromUtf8("降雨");
+            alertMessage = QString::fromUtf8("降雨告警：%1%").arg(m_sharedData->latest_lightrain.rainfall);
+            status = QString::fromUtf8("告警");
+        }
+    }
+    m_alertByNodeId[nodeId]->updateAlertData(alertType, alertMessage, status);
 }
 
 void Widget::updateConnectionStatus()
@@ -397,6 +384,37 @@ void Widget::updateConnectionStatus()
             break;
     }
     m_connectionStatusLabel->setText(statusText);
+}
+
+// 新增：确保某 nodeId 的控件已创建并显示
+void Widget::ensureWidgetsForNode(int nodeId){
+    if (nodeId <= 0) return;
+    //1) 左侧站点卡片
+    if (!m_stationByNodeId.contains(nodeId)){
+        QString name = getStationNameFromNodeId(nodeId);
+        auto *station = new WeatherStationWidget(name, this);
+        m_stationByNodeId.insert(nodeId,station);
+        m_stationWidgets.append(station);
+        // 放入网格
+        m_gridLayout->addWidget(station,m_nextGridRow,m_nextGridCol);
+        // 递增网格位置
+        m_nextGridCol++;
+        if(m_nextGridCol >= kGridCols){
+            m_nextGridCol = 0;
+            m_nextGridRow++;
+        }
+    }
+    // 2) 右侧告警卡片（滚动区）
+    if(!m_alertByNodeId.contains(nodeId)){
+        QString name = getStationNameFromNodeId(nodeId);
+        auto *alert = new AlertStationWidget(name,this);
+        m_alertByNodeId.insert(nodeId,alert);
+        m_alertWidgets.append(alert);
+        //插入到滚动区域（在弹簧之前）
+        int insertPos = qMax(0,m_scrollLayout->count()-1);
+        m_scrollLayout->insertWidget(insertPos,alert);
+    }
+
 }
 
 void Widget::setupUI()
@@ -544,50 +562,46 @@ void Widget::setupLeftWidget()
     m_gridLayout->setContentsMargins(8, 8, 8, 8);
     m_gridLayout->setSpacing(6);
 
-    // 创建气象站widget - 2行3列布局
-    QStringList stationNames = {
-        QString::fromUtf8("主站点"), QString::fromUtf8("上海站"), QString::fromUtf8("广州站"),
-        QString::fromUtf8("成都站"), QString::fromUtf8("西安站"), QString::fromUtf8("武汉站")
-    };
+//    // 创建气象站widget - 2行3列布局
+//    QStringList stationNames = {
+//        QString::fromUtf8("主站点"), QString::fromUtf8("上海站"), QString::fromUtf8("广州站"),
+//        QString::fromUtf8("成都站"), QString::fromUtf8("西安站"), QString::fromUtf8("武汉站")
+//    };
 
-    int row = 0, col = 0;
-    for (const QString& name : stationNames) {
-        WeatherStationWidget* stationWidget = new WeatherStationWidget(name, this);
-        m_stationWidgets.append(stationWidget);
+//    int row = 0, col = 0;
+//    for (const QString& name : stationNames) {
+//        WeatherStationWidget* stationWidget = new WeatherStationWidget(name, this);
+//        m_stationWidgets.append(stationWidget);
 
-        // 添加到网格布局
-        m_gridLayout->addWidget(stationWidget, row, col);
+//        // 添加到网格布局
+//        m_gridLayout->addWidget(stationWidget, row, col);
 
-        // 更新行列索引
-        col++;
-        if (col >= 3) {
-            col = 0;
-            row++;
-        }
-    }
+//        // 更新行列索引
+//        col++;
+//        if (col >= 3) {
+//            col = 0;
+//            row++;
+//        }
+//    }
 
     // 设置行列拉伸因子，使所有widget均匀分布
-    for (int i = 0; i < 3; ++i) {
-        m_gridLayout->setColumnStretch(i, 1);
-    }
-    for (int i = 0; i < 2; ++i) {
-        m_gridLayout->setRowStretch(i, 1);
-    }
+    for (int i = 0; i < 3; ++i) {m_gridLayout->setColumnStretch(i, 1);}
+    for (int i = 0; i < 2; ++i) {m_gridLayout->setRowStretch(i, 1);}
 
-    // 主站点高亮显示
-    if (!m_stationWidgets.isEmpty()) {
-        m_stationWidgets[0]->setHighlighted(true);
-    }
+//    // 主站点高亮显示
+//    if (!m_stationWidgets.isEmpty()) {
+//        m_stationWidgets[0]->setHighlighted(true);
+//    }
 
-    // 初始化一些示例数据
-    if (m_stationWidgets.size() >= 6) {
-        m_stationWidgets[0]->updateData(23.5, 65.2, 1013.2, 25000, 12.5, 0.0);
-        m_stationWidgets[1]->updateData(26.8, 78.1, 1015.6, 30000, 15.2, 2.3);
-        m_stationWidgets[2]->updateData(29.2, 82.5, 1012.8, 28000, 18.7, 0.5);
-        m_stationWidgets[3]->updateData(22.1, 58.9, 1016.3, 32000, 10.8, 0.0);
-        m_stationWidgets[4]->updateData(18.7, 45.2, 1018.7, 35000, 8.3, 0.0);
-        m_stationWidgets[5]->updateData(25.3, 72.1, 1014.5, 26000, 14.9, 1.2);
-    }
+//    // 初始化一些示例数据
+//    if (m_stationWidgets.size() >= 6) {
+//        m_stationWidgets[0]->updateData(23.5, 65.2, 1013.2, 25000, 12.5, 0.0);
+//        m_stationWidgets[1]->updateData(26.8, 78.1, 1015.6, 30000, 15.2, 2.3);
+//        m_stationWidgets[2]->updateData(29.2, 82.5, 1012.8, 28000, 18.7, 0.5);
+//        m_stationWidgets[3]->updateData(22.1, 58.9, 1016.3, 32000, 10.8, 0.0);
+//        m_stationWidgets[4]->updateData(18.7, 45.2, 1018.7, 35000, 8.3, 0.0);
+//        m_stationWidgets[5]->updateData(25.3, 72.1, 1014.5, 26000, 14.9, 1.2);
+//    }
 }
 
 void Widget::setuprightWidget()
@@ -724,17 +738,17 @@ void Widget::setupAlertScrollArea()
     m_scrollLayout->setContentsMargins(5, 5, 5, 5);
     m_scrollLayout->setSpacing(3);
 
-    // 创建6个告警信息widget
-    QStringList stationNames = {
-        QString::fromUtf8("主站点"), QString::fromUtf8("上海站"), QString::fromUtf8("广州站"),
-        QString::fromUtf8("成都站"), QString::fromUtf8("西安站"), QString::fromUtf8("武汉站")
-    };
+//    // 创建6个告警信息widget
+//    QStringList stationNames = {
+//        QString::fromUtf8("主站点"), QString::fromUtf8("上海站"), QString::fromUtf8("广州站"),
+//        QString::fromUtf8("成都站"), QString::fromUtf8("西安站"), QString::fromUtf8("武汉站")
+//    };
 
-    for (const QString& name : stationNames) {
-        AlertStationWidget* alertWidget = new AlertStationWidget(name, this);
-        m_alertWidgets.append(alertWidget);
-        m_scrollLayout->addWidget(alertWidget);
-    }
+//    for (const QString& name : stationNames) {
+//        AlertStationWidget* alertWidget = new AlertStationWidget(name, this);
+//        m_alertWidgets.append(alertWidget);
+//        m_scrollLayout->addWidget(alertWidget);
+//    }
 
     // 添加弹簧，使内容从顶部开始
     m_scrollLayout->addStretch();
@@ -743,13 +757,13 @@ void Widget::setupAlertScrollArea()
     m_scrollArea->setWidget(m_scrollContentWidget);
     middleLayout->addWidget(m_scrollArea);
 
-    // 初始化告警数据
-    if (m_alertWidgets.size() >= 6) {
-        m_alertWidgets[0]->updateAlertData("", QString::fromUtf8("等待数据..."), QString::fromUtf8("离线"));
-        for (int i = 1; i < m_alertWidgets.size(); ++i) {
-            m_alertWidgets[i]->updateAlertData("", "", QString::fromUtf8("正常"));
-        }
-    }
+//    // 初始化告警数据
+//    if (m_alertWidgets.size() >= 6) {
+//        m_alertWidgets[0]->updateAlertData("", QString::fromUtf8("等待数据..."), QString::fromUtf8("离线"));
+//        for (int i = 1; i < m_alertWidgets.size(); ++i) {
+//            m_alertWidgets[i]->updateAlertData("", "", QString::fromUtf8("正常"));
+//        }
+//    }
 }
 
 void Widget::setupLegendWidget()
@@ -822,58 +836,58 @@ void Widget::showSystemInfo()
     updateSystemInfoDisplay();
 }
 
-void Widget::simulateRandomDataForOtherStations(int excludeIndex)
-{
-    // 为其他站点生成随机数据
-    static std::random_device rd;
-    static std::mt19937 gen(rd());
-    std::uniform_int_distribution<int> percentDist(0, 99);
-    std::uniform_int_distribution<int> tempDist(15, 40);
-    std::uniform_int_distribution<int> humidityDist(30, 90);
-    std::uniform_int_distribution<int> pressureDist(995, 1030);
-    std::uniform_int_distribution<int> lightDist(10000, 50000);
-    std::uniform_int_distribution<int> vaporDist(5, 25);
-    std::uniform_int_distribution<int> rainDist(0, 50);
+//void Widget::simulateRandomDataForOtherStations(int excludeIndex)
+//{
+//    // 为其他站点生成随机数据
+//    static std::random_device rd;
+//    static std::mt19937 gen(rd());
+//    std::uniform_int_distribution<int> percentDist(0, 99);
+//    std::uniform_int_distribution<int> tempDist(15, 40);
+//    std::uniform_int_distribution<int> humidityDist(30, 90);
+//    std::uniform_int_distribution<int> pressureDist(995, 1030);
+//    std::uniform_int_distribution<int> lightDist(10000, 50000);
+//    std::uniform_int_distribution<int> vaporDist(5, 25);
+//    std::uniform_int_distribution<int> rainDist(0, 50);
 
-    for (int i = 0; i < m_stationWidgets.size(); ++i) {
-        if (i == excludeIndex) continue; // 跳过真实数据站点
+//    for (int i = 0; i < m_stationWidgets.size(); ++i) {
+//        if (i == excludeIndex) continue; // 跳过真实数据站点
 
-        // 生成随机数据
-        double temp = tempDist(gen);
-        double humidity = humidityDist(gen);
-        double pressure = pressureDist(gen);
-        double lightIntensity = lightDist(gen);
-        double waterVapor = vaporDist(gen) / 10.0;
-        double rainfall = rainDist(gen) / 10.0;
+//        // 生成随机数据
+//        double temp = tempDist(gen);
+//        double humidity = humidityDist(gen);
+//        double pressure = pressureDist(gen);
+//        double lightIntensity = lightDist(gen);
+//        double waterVapor = vaporDist(gen) / 10.0;
+//        double rainfall = rainDist(gen) / 10.0;
 
-        // 更新显示
-        m_stationWidgets[i]->updateData(temp, humidity, pressure, lightIntensity, waterVapor, rainfall);
+//        // 更新显示
+//        m_stationWidgets[i]->updateData(temp, humidity, pressure, lightIntensity, waterVapor, rainfall);
 
-        // 模拟告警状态
-        int rand = percentDist(gen);
-        if (rand < 15) {
-            m_alertWidgets[i]->updateAlertData("", "", QString::fromUtf8("离线"));
-        } else if (rand < 25) {
-            QString alertType = QString::fromUtf8("温度");
-            QString alertMessage = QString::fromUtf8("极高温警报：%1°C").arg(temp, 0, 'f', 1);
-            m_alertWidgets[i]->updateAlertData(alertType, alertMessage, QString::fromUtf8("警报"));
-        } else if (rand < 45) {
-            QString alertType = QString::fromUtf8("温度");
-            QString alertMessage = QString::fromUtf8("高温告警：%1°C").arg(temp, 0, 'f', 1);
-            m_alertWidgets[i]->updateAlertData(alertType, alertMessage, QString::fromUtf8("告警"));
-        } else {
-            m_alertWidgets[i]->updateAlertData("", "", QString::fromUtf8("正常"));
-        }
-    }
-}
+//        // 模拟告警状态
+//        int rand = percentDist(gen);
+//        if (rand < 15) {
+//            m_alertWidgets[i]->updateAlertData("", "", QString::fromUtf8("离线"));
+//        } else if (rand < 25) {
+//            QString alertType = QString::fromUtf8("温度");
+//            QString alertMessage = QString::fromUtf8("极高温警报：%1°C").arg(temp, 0, 'f', 1);
+//            m_alertWidgets[i]->updateAlertData(alertType, alertMessage, QString::fromUtf8("警报"));
+//        } else if (rand < 45) {
+//            QString alertType = QString::fromUtf8("温度");
+//            QString alertMessage = QString::fromUtf8("高温告警：%1°C").arg(temp, 0, 'f', 1);
+//            m_alertWidgets[i]->updateAlertData(alertType, alertMessage, QString::fromUtf8("告警"));
+//        } else {
+//            m_alertWidgets[i]->updateAlertData("", "", QString::fromUtf8("正常"));
+//        }
+//    }
+//}
 
-void Widget::updateWeatherData()
-{
-    //qDebug() << "Manual data refresh -" << QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss");
+//void Widget::updateWeatherData()
+//{
+//    //qDebug() << "Manual data refresh -" << QDateTime::currentDateTime().toString("yyyy-MM-dd hh:mm:ss");
 
-    // 模拟所有站点的随机数据
-    simulateRandomDataForOtherStations(-1); // -1表示为所有站点生成数据
-}
+//    // 模拟所有站点的随机数据
+//    simulateRandomDataForOtherStations(-1); // -1表示为所有站点生成数据
+//}
 
 // WeatherStationWidget 实现
 WeatherStationWidget::WeatherStationWidget(const QString& stationName, QWidget *parent)

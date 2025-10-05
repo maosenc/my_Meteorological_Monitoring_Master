@@ -41,7 +41,7 @@ public:
     ~Widget();
 
 private slots:
-    void updateWeatherData(); // 用于更新随机气象数据（测试用）
+    //void updateWeatherData(); // 用于更新随机气象数据（测试用）
     void checkSharedMemoryUpdate(); // 检查共享内存数据更新
     void updateTimeDisplay(); // 更新时间显示
     void showSystemInfo(); // 显示系统信息
@@ -70,6 +70,10 @@ private:
     void updateStationWithGPSData(const struct gps_data &data, int stationIndex);
     void updateAlertWithLatestData(int stationIndex);
     void simulateRandomDataForOtherStations(int excludeIndex);
+
+    // 新增：确保某 nodeId 的控件已创建并显示
+    void ensureWidgetsForNode(int nodeId);
+
 
     // 通过node_id获取站点名称
     QString getStationNameFromNodeId(int nodeId);
@@ -117,7 +121,19 @@ private:
     int m_currentStationIndex; // 当前显示真实数据的站点索引
     bool m_useRealData; // 是否使用真实数据
     int nodeId;
+
+    //新增：nodeId -> 控件映射
+    QMap<int,WeatherStationWidget*> m_stationByNodeId;
+    QMap<int,AlertStationWidget*> m_alertByNodeId;
+
+    // 新增：网格位置游标
+    int m_nextGridRow = 0;
+    int m_nextGridCol = 0;
+    static constexpr int kGridCols = 3;// 左侧 3 列
 };
+
+
+
 
 // 气象站数据显示widget
 class WeatherStationWidget : public QFrame
