@@ -59,7 +59,6 @@ Widget::Widget(QWidget *parent)
     connect(m_updateSystemInfoTimer, &QTimer::timeout, this, &Widget::updateSystemInfoDisplay);
     m_updateSystemInfoTimer->start(100); // 每秒更新一次系统信息显示
 
-
     // 创建数据检查定时器
     m_dataCheckTimer = new QTimer(this);
     connect(m_dataCheckTimer, &QTimer::timeout, this, &Widget::checkSharedMemoryUpdate);
